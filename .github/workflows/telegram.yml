@@ -16,19 +16,27 @@ jobs:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           COMMIT_URL: ${{ github.event.head_commit.url }}
         run: |
-          TEXT=$(jq -n \
-            --arg repo "$REPO" \
-            --arg branch "$BRANCH" \
-            --arg actor "$ACTOR" \
-            --arg msg "$COMMIT_MSG" \
-            --arg url "$COMMIT_URL" \
-            '{
-              chat_id: env.CHAT_ID,
-              parse_mode: "Markdown",
-              disable_web_page_preview: true,
-              text: "🚀 *New Push to* `\($repo)`\n🌿 *Branch:* `\($branch)`\n👤 *By:* \($actor)\n💬 *Commit:* \($msg)\n🔗 [View Commit](\($url))"
-            }')
+          IFS=',' read -ra ID_LIST <<< "$CHAT_ID"
 
-          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-            -H "Content-Type: application/json" \
-            -d "$TEXT"
+          for TARGET_ID in "${ID_LIST[@]}"; do
+            CLEAN_ID=$(echo "$TARGET_ID" | xargs)
+
+            TEXT=$(jq -n \
+              --arg chat_id "$CLEAN_ID" \
+              --arg repo "$REPO" \
+              --arg branch "$BRANCH" \
+              --arg actor "$ACTOR" \
+              --arg msg "$COMMIT_MSG" \
+              --arg url "$COMMIT_URL" \
+              '{
+                chat_id: $chat_id,
+                parse_mode: "Markdown",
+                disable_web_page_preview: true,
+                text: "🚀 *New Push to* `\($repo)`\n🌿 *Branch:* `\($branch)`\n👤 *By:* \($actor)\n💬 *Commit:* \($msg)\n🔗 [View Commit](\($url))"
+              }')
+
+            curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+              -H "Content-Type: application/json" \
+              -d "$TEXT"
+          done
+
