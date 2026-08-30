@@ -1,6 +1,9 @@
 name: Notify Telegram
 
-on: [push]
+on:
+  push:
+    branches:
+      - '**'
 
 jobs:
   notify:
@@ -30,13 +33,14 @@ jobs:
               --arg url "$COMMIT_URL" \
               '{
                 chat_id: $chat_id,
-                parse_mode: "Markdown",
+                parse_mode: "HTML",
                 disable_web_page_preview: true,
-                text: "🚀 *New Push to* `\($repo)`\n🌿 *Branch:* `\($branch)`\n👤 *By:* \($actor)\n💬 *Commit:* \($msg)\n🔗 [View Commit](\($url))"
+                text: "🚀 <b>New Push to</b> <code>\($repo)</code>\n🌿 <b>Branch:</b> <code>\($branch)</code>\n👤 <b>By:</b> \($actor)\n💬 <b>Commit:</b> \($msg)\n🔗 <a href=\"\($url)\">View Commit</a>"
               }')
 
-            curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
               -H "Content-Type: application/json" \
-              -d "$TEXT"
-          done
+              -d "$TEXT")
 
+            echo "Response for ID $CLEAN_ID: $RESPONSE"
+          done
